@@ -1,0 +1,50 @@
+# Java/Kotlin
+*.class
+*.iml
+
+# Android Studio / IntelliJ
+.idea/
+*.ipr
+*.iws
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/modules/
+
+# Gradle
+.gradle/
+build/
+/build
+/app/build
+*/build/
+
+# Local configuration
+local.properties
+
+# Log files
+*.log
+
+# Mac specific
+.DS_Store
+
+# Android specific
+/captures
+.externalNativeBuild
+.cxx
+
+# Secrets / Keys (CRÍTICO)
+*.jks
+*.keystore
+*.p12
+*.key
+google-services.json
+
+# Bundle / APK
+*.apk
+*.aab
+
+# Kotlin
+.kotlin/

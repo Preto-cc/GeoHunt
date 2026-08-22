@@ -1,0 +1,6 @@
+- [x] Traducir mensajes en `LocationHelper.kt`
+- [x] Mapear errores de inicio de sesión en `WelcomeViewModel.kt`
+- [x] Traducir errores de perfil en `ProfileViewModel.kt`
+- [x] Refinar mensajes en `DetalleLugarViewModel.kt`
+- [x] Revisar validaciones en `AdminLugaresScreen.kt`
+- [x] Verificar traducciones en la app
