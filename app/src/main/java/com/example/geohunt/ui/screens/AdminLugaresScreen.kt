@@ -42,12 +42,13 @@ fun AdminLugaresScreen(
     if (showAddDialog) {
         LugarDialog(
             title = "Nuevo Lugar",
+            lugaresDelEvento = lugares,
             onDismiss = { showAddDialog = false },
             onConfirm = { lugar ->
                 viewModel.crearLugar(
                     eventoId, lugar.nombre, lugar.lat, lugar.lng, 
                     lugar.radioMetros, lugar.mensajeOculto, lugar.puntos, lugar.puntosBonus,
-                    lugar.mostrarCoordenadas
+                    lugar.mostrarCoordenadas, lugar.desbloqueadoPorLugarId
                 )
                 showAddDialog = false
             }
@@ -58,6 +59,7 @@ fun AdminLugaresScreen(
         LugarDialog(
             title = "Editar Lugar",
             lugar = lugar,
+            lugaresDelEvento = lugares.filter { it.id != lugar.id },
             onDismiss = { lugarParaEditar = null },
             onConfirm = { nuevoLugar ->
                 viewModel.actualizarLugar(eventoId, nuevoLugar.copy(id = lugar.id))
@@ -172,10 +174,12 @@ fun AdminLugarItem(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LugarDialog(
     title: String,
     lugar: Lugar? = null,
+    lugaresDelEvento: List<Lugar> = emptyList(),
     onDismiss: () -> Unit,
     onConfirm: (Lugar) -> Unit
 ) {
@@ -187,7 +191,11 @@ fun LugarDialog(
     var pts by remember { mutableStateOf(lugar?.puntos?.toString() ?: "100") }
     var bonus by remember { mutableStateOf(lugar?.puntosBonus?.toString() ?: "50") }
     var mostrarCoordenadas by remember { mutableStateOf(lugar?.mostrarCoordenadas ?: true) }
+    var desbloqueadoPor by remember { mutableStateOf(lugar?.desbloqueadoPorLugarId) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
+    
+    var expanded by remember { mutableStateOf(false) }
+    val lugarSeleccionado = lugaresDelEvento.find { it.id == desbloqueadoPor }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -272,6 +280,46 @@ fun LugarDialog(
                         )
                         Text("Mostrar coordenadas a los usuarios", style = MaterialTheme.typography.bodyMedium)
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = it },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        TextField(
+                            value = lugarSeleccionado?.nombre ?: "Nadie (Libre)",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Desbloqueado por", fontWeight = FontWeight.Bold) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                            colors = fieldColors,
+                            modifier = Modifier.menuAnchor().fillMaxWidth()
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Nadie (Libre)") },
+                                onClick = {
+                                    desbloqueadoPor = null
+                                    expanded = false
+                                }
+                            )
+                            lugaresDelEvento.forEach { item ->
+                                DropdownMenuItem(
+                                    text = { Text(item.nombre) },
+                                    onClick = {
+                                        desbloqueadoPor = item.id
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -308,7 +356,8 @@ fun LugarDialog(
                             mensajeOculto = msg,
                             puntos = ptsNum,
                             puntosBonus = bonusNum,
-                            mostrarCoordenadas = mostrarCoordenadas
+                            mostrarCoordenadas = mostrarCoordenadas,
+                            desbloqueadoPorLugarId = desbloqueadoPor
                         )
                     )
                 }

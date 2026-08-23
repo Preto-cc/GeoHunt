@@ -1,8 +1,8 @@
-- [x] Actualizar modelos de datos en `Models.kt`
-- [x] Actualizar Repositorio y ViewModels
-    - [x] Persistir `rankingCercano` en `GeoHuntRepository.kt`
-    - [x] Manejar `rankingCercano` en `AdminViewModel.kt`
-    - [x] Implementar lógica de visibilidad en `RankingViewModel.kt`
-- [x] Actualizar interfaz de administración en `AdminScreen.kt`
-- [x] Implementar lógica de visibilidad en `RankingScreen.kt`
-- [x] Verificar cambios
+- [x] Actualizar modelos de datos (`Models.kt`)
+- [x] Actualizar Repositorio (`GeoHuntRepository.kt`)
+- [x] Actualizar AdminViewModel para soportar nuevos campos
+- [x] Implementar Checkbox "Mostrar bloqueados" en `AdminScreen.kt`
+- [x] Implementar Selector "Desbloqueado por" en `AdminLugaresScreen.kt`
+- [x] Actualizar lógica de bloqueo en `LugaresViewModel.kt`
+- [x] Adaptar UI de listado y badges en `ListadoLugaresScreen.kt`
+- [x] Verificar funcionamiento y acceso seguro

@@ -14,22 +14,23 @@ class AdminViewModel : ViewModel() {
     val eventos: StateFlow<List<Evento>> = GeoHuntRepository.getEventosAdmin()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun crearEvento(nombre: String, descripcion: String, fechaFin: Long?, rankingCercano: Boolean) {
+    fun crearEvento(nombre: String, descripcion: String, fechaFin: Long?, rankingCercano: Boolean, mostrarLugaresBloqueados: Boolean) {
         viewModelScope.launch {
             val evento = Evento(
                 nombre = nombre,
                 descripcion = descripcion,
                 fechaInicio = System.currentTimeMillis(),
                 fechaFin = fechaFin,
-                rankingCercano = rankingCercano
+                rankingCercano = rankingCercano,
+                mostrarLugaresBloqueados = mostrarLugaresBloqueados
             )
             GeoHuntRepository.crearEvento(evento)
         }
     }
 
-    fun actualizarEvento(eventoId: String, nombre: String, descripcion: String, activo: Boolean, fechaFin: Long?, rankingCercano: Boolean) {
+    fun actualizarEvento(eventoId: String, nombre: String, descripcion: String, activo: Boolean, fechaFin: Long?, rankingCercano: Boolean, mostrarLugaresBloqueados: Boolean) {
         viewModelScope.launch {
-            GeoHuntRepository.actualizarEvento(eventoId, nombre, descripcion, activo, fechaFin, rankingCercano)
+            GeoHuntRepository.actualizarEvento(eventoId, nombre, descripcion, activo, fechaFin, rankingCercano, mostrarLugaresBloqueados)
         }
     }
 
@@ -57,7 +58,7 @@ class AdminViewModel : ViewModel() {
         }
     }
 
-    fun crearLugar(eventoId: String, nombre: String, lat: Double, lng: Double, radio: Float, msg: String, pts: Int, bonus: Int, mostrarCoordenadas: Boolean) {
+    fun crearLugar(eventoId: String, nombre: String, lat: Double, lng: Double, radio: Float, msg: String, pts: Int, bonus: Int, mostrarCoordenadas: Boolean, desbloqueadoPor: String?) {
         viewModelScope.launch {
             val lugar = Lugar(
                 eventoId = eventoId,
@@ -68,7 +69,8 @@ class AdminViewModel : ViewModel() {
                 mensajeOculto = msg,
                 puntos = pts,
                 puntosBonus = bonus,
-                mostrarCoordenadas = mostrarCoordenadas
+                mostrarCoordenadas = mostrarCoordenadas,
+                desbloqueadoPorLugarId = desbloqueadoPor
             )
             GeoHuntRepository.crearLugar(eventoId, lugar)
         }

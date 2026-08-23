@@ -150,13 +150,14 @@ object GeoHuntRepository {
         db.collection("eventos").document(ref.id).set(evento.copy(id = ref.id, orden = nuevoOrden)).await()
     }
 
-    suspend fun actualizarEvento(eventoId: String, nombre: String, descripcion: String, activo: Boolean, fechaFin: Long?, rankingCercano: Boolean) {
+    suspend fun actualizarEvento(eventoId: String, nombre: String, descripcion: String, activo: Boolean, fechaFin: Long?, rankingCercano: Boolean, mostrarLugaresBloqueados: Boolean) {
         val updates = mutableMapOf<String, Any?>(
             "nombre" to nombre,
             "descripcion" to descripcion,
             "activo" to activo,
             "fechaFin" to fechaFin,
-            "rankingCercano" to rankingCercano
+            "rankingCercano" to rankingCercano,
+            "mostrarLugaresBloqueados" to mostrarLugaresBloqueados
         )
         db.collection("eventos").document(eventoId).update(updates).await()
     }
@@ -226,7 +227,8 @@ object GeoHuntRepository {
             "mensajeOculto", lugar.mensajeOculto,
             "puntos", lugar.puntos,
             "puntosBonus", lugar.puntosBonus,
-            "mostrarCoordenadas", lugar.mostrarCoordenadas
+            "mostrarCoordenadas", lugar.mostrarCoordenadas,
+            "desbloqueadoPorLugarId", lugar.desbloqueadoPorLugarId
         ).await()
     }
 

@@ -6,6 +6,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -130,7 +131,24 @@ fun DetalleLugarScreen(
                     
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    if (uiState.visitado) {
+                    if (uiState.bloqueado) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                Text(
+                                    text = "Este lugar está bloqueado. Debes visitar el lugar requerido para desbloquearlo.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
+                    } else if (uiState.visitado) {
                         if (uiState.esPrimero) {
                             GoldenShimmerText("¡HAS SIDO EL PRIMERO EN VISITAR EL LUGAR!")
                         } else {

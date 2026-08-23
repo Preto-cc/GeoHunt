@@ -1,28 +1,26 @@
-# Resumen de Cambios: Ranking Cercano
+# Resumen de Cambios: Dependencias entre Lugares
 
-Se ha implementado la funcionalidad de "Ranking Cercano" para los eventos, permitiendo un modo de juego más misterioso donde los jugadores solo ven su puntuación y la de sus competidores más directos.
+Se ha implementado un sistema de prerrequisitos para los lugares de un evento. Ahora es posible condicionar la visibilidad o el acceso a un lugar en función de si otro lugar ha sido visitado previamente.
 
 ## Cambios Realizados
 
 ### Backend y Lógica
 - **[Models.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/data/Models.kt)**:
-    - Añadido el campo `rankingCercano` a la clase `Evento`.
-    - Añadido el campo `uid` a `UsuarioRanking` para permitir identificaciones precisas en la interfaz.
-- **[GeoHuntRepository.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/data/repository/GeoHuntRepository.kt)**: Actualizada la lógica de persistencia y generación de ranking para incluir los nuevos campos.
-- **[RankingViewModel.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/viewmodel/RankingViewModel.kt)**: Ahora obtiene la configuración del evento para saber si debe aplicar la restricción de visibilidad.
+    - `Evento`: Añadido `mostrarLugaresBloqueados`.
+    - `Lugar`: Añadido `desbloqueadoPorLugarId`.
+- **[LugaresViewModel.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/viewmodel/LugaresViewModel.kt)**: Implementada la lógica que calcula si un lugar está bloqueado comparando sus dependencias con el historial de visitas del usuario.
 
 ### Panel de Administración
-- **[AdminScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/AdminScreen.kt)**:
-    - Se ha añadido el checkbox **"Ranking Cercano"** en los diálogos de creación y edición de eventos, situado justo debajo de "Evento Activo".
+- **[AdminScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/AdminScreen.kt)**: Nuevo check **"Mostrar bloqueados"** para controlar la visibilidad global de la jerarquía.
+- **[AdminLugaresScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/AdminLugaresScreen.kt)**: Integrado un **menú desplegable** en el diálogo de edición de lugares para seleccionar fácilmente de qué otro lugar depende el actual.
 
-### Experiencia del Usuario (Ranking)
-- **[RankingScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/RankingScreen.kt)**:
-    - **Lógica de Visibilidad**:
-        - Si el modo está activo, los jugadores normales solo ven los puntos del usuario inmediatamente superior e inferior a ellos en la tabla.
-        - El resto de puntuaciones se muestran como **"Puntos: Oculto"**.
-    - **Excepción de Admin**: Los administradores siguen viendo el ranking completo (todas las puntuaciones visibles) incluso si el modo cercano está activado.
+### Experiencia del Usuario
+- **[ListadoLugaresScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/ListadoLugaresScreen.kt)**:
+    - Si el evento oculta bloqueados, los lugares no aparecerán hasta ser desbloqueados.
+    - Si el evento muestra bloqueados, aparecerán con un badge rojo de **"Bloqueado"** y el clic estará inhabilitado.
+- **[DetalleLugarScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/DetalleLugarScreen.kt)**: Añadida una pantalla de seguridad que informa al usuario si intenta acceder a un lugar bloqueado.
 
 ## Verificación Realizada
-- Se ha comprobado que el estado del checkbox se guarda correctamente.
-- Se ha verificado que un administrador ve todos los datos.
-- Se ha verificado que un usuario ve sus puntos y los de sus dos vecinos, pero no el resto.
+- Se ha comprobado que un lugar dependiente desaparece/aparece según la configuración de "Mostrar bloqueados".
+- Se ha verificado que al visitar el lugar "padre", el lugar "hijo" se desbloquea instantáneamente.
+- La navegación directa a un ID de lugar bloqueado muestra ahora el mensaje de advertencia correspondiente.

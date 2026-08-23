@@ -43,8 +43,8 @@ fun AdminScreen(
     if (showAddDialog) {
         AddEventoDialog(
             onDismiss = { showAddDialog = false },
-            onConfirm = { nombre, desc, fechaFin, rankingCercano ->
-                viewModel.crearEvento(nombre, desc, fechaFin, rankingCercano)
+            onConfirm = { nombre, desc, fechaFin, rankingCercano, mostrarBloqueados ->
+                viewModel.crearEvento(nombre, desc, fechaFin, rankingCercano, mostrarBloqueados)
                 showAddDialog = false
             }
         )
@@ -54,8 +54,8 @@ fun AdminScreen(
         EditEventoDialog(
             evento = evento,
             onDismiss = { eventoParaEditar = null },
-            onConfirm = { nombre, desc, activo, fechaFin, rankingCercano ->
-                viewModel.actualizarEvento(evento.id, nombre, desc, activo, fechaFin, rankingCercano)
+            onConfirm = { nombre, desc, activo, fechaFin, rankingCercano, mostrarBloqueados ->
+                viewModel.actualizarEvento(evento.id, nombre, desc, activo, fechaFin, rankingCercano, mostrarBloqueados)
                 eventoParaEditar = null
             }
         )
@@ -179,11 +179,12 @@ fun AdminEventoItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddEventoDialog(onDismiss: () -> Unit, onConfirm: (String, String, Long?, Boolean) -> Unit) {
+fun AddEventoDialog(onDismiss: () -> Unit, onConfirm: (String, String, Long?, Boolean, Boolean) -> Unit) {
     var nombre by remember { mutableStateOf("") }
     var desc by remember { mutableStateOf("") }
     var fechaFin by remember { mutableStateOf<Long?>(null) }
     var rankingCercano by remember { mutableStateOf(false) }
+    var mostrarBloqueados by remember { mutableStateOf(true) }
     
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
@@ -276,10 +277,14 @@ fun AddEventoDialog(onDismiss: () -> Unit, onConfirm: (String, String, Long?, Bo
                     Checkbox(checked = rankingCercano, onCheckedChange = { rankingCercano = it })
                     Text("Ranking Cercano")
                 }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = mostrarBloqueados, onCheckedChange = { mostrarBloqueados = it })
+                    Text("Mostrar bloqueados")
+                }
             }
         },
         confirmButton = {
-            Button(onClick = { if (nombre.isNotBlank()) onConfirm(nombre, desc, fechaFin, rankingCercano) }) {
+            Button(onClick = { if (nombre.isNotBlank()) onConfirm(nombre, desc, fechaFin, rankingCercano, mostrarBloqueados) }) {
                 Text("Crear")
             }
         },
@@ -291,12 +296,13 @@ fun AddEventoDialog(onDismiss: () -> Unit, onConfirm: (String, String, Long?, Bo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditEventoDialog(evento: Evento, onDismiss: () -> Unit, onConfirm: (String, String, Boolean, Long?, Boolean) -> Unit) {
+fun EditEventoDialog(evento: Evento, onDismiss: () -> Unit, onConfirm: (String, String, Boolean, Long?, Boolean, Boolean) -> Unit) {
     var nombre by remember { mutableStateOf(evento.nombre) }
     var desc by remember { mutableStateOf(evento.descripcion) }
     var activo by remember { mutableStateOf(evento.activo) }
     var fechaFin by remember { mutableStateOf(evento.fechaFin) }
     var rankingCercano by remember { mutableStateOf(evento.rankingCercano) }
+    var mostrarBloqueados by remember { mutableStateOf(evento.mostrarLugaresBloqueados) }
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
@@ -399,10 +405,14 @@ fun EditEventoDialog(evento: Evento, onDismiss: () -> Unit, onConfirm: (String, 
                     Checkbox(checked = rankingCercano, onCheckedChange = { rankingCercano = it })
                     Text("Ranking Cercano")
                 }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = mostrarBloqueados, onCheckedChange = { mostrarBloqueados = it })
+                    Text("Mostrar bloqueados")
+                }
             }
         },
         confirmButton = {
-            Button(onClick = { if (nombre.isNotBlank()) onConfirm(nombre, desc, activo, fechaFin, rankingCercano) }) {
+            Button(onClick = { if (nombre.isNotBlank()) onConfirm(nombre, desc, activo, fechaFin, rankingCercano, mostrarBloqueados) }) {
                 Text("Guardar")
             }
         },

@@ -6,34 +6,59 @@ import com.example.geohunt.data.Lugar
 import com.example.geohunt.data.repository.AuthRepository
 import com.example.geohunt.data.repository.GeoHuntRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
 data class LugarUiState(
     val lugar: Lugar,
-    val visitado: Boolean
+    val visitado: Boolean,
+    val bloqueado: Boolean = false
+)
+
+data class EventoLugaresUiState(
+    val lugares: List<LugarUiState> = emptyList(),
+    val mostrarBloqueados: Boolean = true
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LugaresViewModel : ViewModel() {
     private val _eventoId = MutableStateFlow("")
     
-    val uiState: StateFlow<List<LugarUiState>> = _eventoId.flatMapLatest { eventoId ->
+    val uiState: StateFlow<EventoLugaresUiState> = _eventoId.flatMapLatest { eventoId ->
+        if (eventoId.isEmpty()) return@flatMapLatest flowOf(EventoLugaresUiState())
+
         combine(
             GeoHuntRepository.getLugaresByEvento(eventoId),
-            GeoHuntRepository.visitas
-        ) { lugares, visitas ->
+            GeoHuntRepository.visitas,
+            GeoHuntRepository.getEventos().map { list -> list.find { it.id == eventoId } }
+        ) { lugares, visitas, evento ->
             val currentUid = AuthRepository.getCurrentUid() ?: ""
-            lugares.map { lugar ->
-                val visitado = visitas.any { it.lugarId == lugar.id && it.usuarioId == currentUid }
-                LugarUiState(lugar, visitado)
+            
+            val idsVisitadas = visitas
+                .filter { it.usuarioId == currentUid && it.eventoId == eventoId }
+                .map { it.lugarId }
+                .toSet()
+
+            val listaLugarUi = lugares.map { lugar ->
+                val visitado = idsVisitadas.contains(lugar.id)
+                val bloqueado = lugar.desbloqueadoPorLugarId != null && 
+                               !idsVisitadas.contains(lugar.desbloqueadoPorLugarId)
+                
+                LugarUiState(lugar, visitado, bloqueado)
             }
+
+            val mostrarBloqueados = evento?.mostrarLugaresBloqueados ?: true
+            
+            // Si mostrarBloqueados es false, filtramos los que estén bloqueados
+            val listaFiltrada = if (mostrarBloqueados) {
+                listaLugarUi
+            } else {
+                listaLugarUi.filter { !it.bloqueado }
+            }
+
+            EventoLugaresUiState(listaFiltrada, mostrarBloqueados)
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), EventoLugaresUiState())
 
     fun setEventoId(id: String) {
         _eventoId.value = id

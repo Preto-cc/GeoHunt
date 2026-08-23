@@ -12,7 +12,8 @@ data class Evento(
     val fechaFin: Long? = null,
     val activo: Boolean = true,
     val orden: Int = 0,
-    val rankingCercano: Boolean = false
+    val rankingCercano: Boolean = false,
+    val mostrarLugaresBloqueados: Boolean = true
 )
 
 @Keep
@@ -28,7 +29,8 @@ data class Lugar(
     val puntosBonus: Int = 0,
     val primerVisitanteId: String? = null,
     val orden: Int = 0,
-    val mostrarCoordenadas: Boolean = true
+    val mostrarCoordenadas: Boolean = true,
+    val desbloqueadoPorLugarId: String? = null
 )
 
 @Keep

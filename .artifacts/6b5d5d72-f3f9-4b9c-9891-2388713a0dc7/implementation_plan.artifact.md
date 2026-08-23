@@ -1,49 +1,56 @@
-# Plan de Implementación: Ranking Cercano
+# Plan de Implementación: Dependencias entre Lugares
 
-Este plan permitirá configurar eventos con un "Ranking Cercano". En esta modalidad, los participantes solo podrán ver su propia puntuación y la de los usuarios inmediatamente por encima y por debajo en la clasificación. Las puntuaciones de los demás usuarios aparecerán como "Oculto".
+Este plan permitirá crear una jerarquía de descubrimiento de lugares, donde un lugar puede estar bloqueado hasta que el usuario haya visitado otro lugar específico (dependencia).
 
 ## Cambios Propuestos
 
 ### Componente: Modelos de Datos
 
 #### [MODIFY] [Models.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/data/Models.kt)
-- Añadir el campo `rankingCercano: Boolean = false` a la clase `Evento`.
-- Actualizar `UsuarioRanking` para incluir el campo `uid: String` de forma explícita.
+- **`Evento`**: Añadir el campo `mostrarLugaresBloqueados: Boolean = true`.
+- **`Lugar`**: Añadir el campo `desbloqueadoPorLugarId: String? = null`.
 
 ### Componente: Repositorio
 
 #### [MODIFY] [GeoHuntRepository.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/data/repository/GeoHuntRepository.kt)
-- Actualizar `actualizarEvento` para persistir el campo `rankingCercano`.
-- Modificar `getRanking` para rellenar el nuevo campo `uid` en los objetos `UsuarioRanking`.
+- **`actualizarEvento`**: Persistir el nuevo campo `mostrarLugaresBloqueados`.
+- **`actualizarLugar`**: Persistir el nuevo campo `desbloqueadoPorLugarId`.
 
-### Componente: ViewModels
+### Componente: ViewModels de Administración
 
 #### [MODIFY] [AdminViewModel.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/viewmodel/AdminViewModel.kt)
-- Actualizar `crearEvento` y `actualizarEvento` para manejar el parámetro `rankingCercano`.
+- Adaptar las funciones de creación y actualización para manejar los nuevos campos de dependencias y visibilidad.
 
-#### [MODIFY] [RankingViewModel.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/viewmodel/RankingViewModel.kt)
-- Modificar para obtener también los detalles del `Evento` (necesario para saber si el ranking cercano está activo).
-- Adaptar la lógica de mapeo de nombres al nuevo campo `uid`.
-
-### Componente: Interfaz de Usuario (Administración)
+### Componente: Interfaz de Administración
 
 #### [MODIFY] [AdminScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/AdminScreen.kt)
-- Añadir un `Checkbox` "Ranking Cercano" en los diálogos de creación y edición de eventos.
+- Añadir el Checkbox **"Mostrar bloqueados"** en los diálogos de creación y edición de eventos (debajo de "Ranking Cercano").
 
-### Componente: Interfaz de Usuario (Ranking)
+#### [MODIFY] [AdminLugaresScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/AdminLugaresScreen.kt)
+- **`LugarDialog`**: Añadir un selector desplegable (`ExposedDropdownMenu`) llamado **"Desbloqueado por"** que muestre la lista de lugares del evento actual.
 
-#### [MODIFY] [RankingScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/RankingScreen.kt)
-- Implementar la lógica de visibilidad:
-    - Identificar si el usuario actual es administrador.
-    - Identificar la posición del usuario actual en la lista.
-    - Si `rankingCercano` es true **y el usuario NO es administrador**:
-        - Mostrar los puntos solo si el usuario en esa fila es el usuario actual, el de arriba (i-1) o el de abajo (i+1).
-        - Para el resto de filas, mostrar "Puntos: Oculto".
-    - Si el usuario **ES administrador**, mostrar siempre todas las puntuaciones.
+### Componente: Lógica de Juego (Participante)
+
+#### [MODIFY] [LugaresViewModel.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/viewmodel/LugaresViewModel.kt)
+- **`LugarUiState`**: Añadir el campo `bloqueado: Boolean`.
+- Modificar el `combine` para calcular el estado de bloqueo: un lugar está bloqueado si tiene dependencia y el usuario aún no ha visitado el lugar del que depende.
+- Obtener la configuración del `Evento` para aplicar la lógica de filtrado o cambio de etiqueta.
+
+#### [MODIFY] [ListadoLugaresScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/ListadoLugaresScreen.kt)
+- Filtrar la lista si `evento.mostrarLugaresBloqueados` es false y el lugar está bloqueado.
+- Actualizar `StatusBadge` para mostrar la etiqueta **"Bloqueado"** cuando corresponda.
+- Desactivar el click en lugares bloqueados.
+
+#### [MODIFY] [DetalleLugarScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/DetalleLugarScreen.kt)
+- Impedir el acceso o mostrar un mensaje de advertencia si un usuario intenta entrar a un lugar bloqueado vía URL/Navegación directa (por seguridad).
 
 ## Plan de Verificación
 
 ### Pruebas Manuales
-1. **Admin**: Crear un evento con "Ranking Cercano" activado (colocado debajo de "Evento Activo").
-2. **Jugador**: Entrar en el ranking y verificar que solo ve su puntuación y la de sus dos rivales más directos.
-3. **Admin**: Entrar en el ranking del mismo evento y verificar que él sí puede ver TODAS las puntuaciones sin restricciones.
+1. **Admin**: Crear un Evento A con "Mostrar bloqueados" desactivado.
+2. **Admin**: Crear Lugar 1 y Lugar 2 (Lugar 2 depende de Lugar 1).
+3. **Jugador**: Entrar al Evento A y verificar que SOLO ve el Lugar 1.
+4. **Jugador**: Visitar el Lugar 1. Verificar que el Lugar 2 aparece automáticamente en la lista.
+5. **Admin**: Cambiar el Evento A a "Mostrar bloqueados" activado.
+6. **Jugador (con otro usuario)**: Verificar que ve el Lugar 2 pero con el texto "Bloqueado".
+7. **Jugador**: Intentar pulsar en el Lugar 2 bloqueado. El click debe estar desactivado.

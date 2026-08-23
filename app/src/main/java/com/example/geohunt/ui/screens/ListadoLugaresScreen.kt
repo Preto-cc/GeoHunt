@@ -63,8 +63,10 @@ fun ListadoLugaresScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(uiState) { state ->
-                LugarItem(state = state, onClick = { onLugarClick(state.lugar.id) })
+            items(uiState.lugares) { state ->
+                LugarItem(state = state, onClick = { 
+                    if (!state.bloqueado) onLugarClick(state.lugar.id) 
+                })
             }
         }
     }
@@ -72,15 +74,18 @@ fun ListadoLugaresScreen(
 
 @Composable
 fun LugarItem(state: LugarUiState, onClick: () -> Unit) {
+    val alpha = if (state.bloqueado) 0.5f else 1f
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        // Eliminamos la elevación (sombra) que creaba el efecto de borde
+            .clickable(enabled = !state.bloqueado, onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f * alpha)),
         colors = CardDefaults.cardColors(
-            containerColor = if (!state.visitado) 
+            containerColor = if (state.bloqueado)
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            else if (!state.visitado) 
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
             else 
                 MaterialTheme.colorScheme.surface
@@ -98,26 +103,50 @@ fun LugarItem(state: LugarUiState, onClick: () -> Unit) {
                     text = state.lugar.nombre, 
                     style = MaterialTheme.typography.titleMedium, 
                     fontWeight = FontWeight.Bold,
-                    color = if (!state.visitado) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                    color = if (state.bloqueado) 
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    else if (!state.visitado) 
+                        MaterialTheme.colorScheme.onSurfaceVariant 
+                    else 
+                        MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "${state.lugar.puntos} pts", 
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = if (state.bloqueado) 
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                    else 
+                        MaterialTheme.colorScheme.primary
                 )
             }
             
-            StatusBadge(visitado = state.visitado)
+            StatusBadge(visitado = state.visitado, bloqueado = state.bloqueado)
         }
     }
 }
 
 @Composable
-fun StatusBadge(visitado: Boolean) {
-    val containerColor = if (visitado) Color(0xFFE8F5E9) else Color(0xFFF5F5F5)
-    val contentColor = if (visitado) Color(0xFF2E7D32) else Color(0xFF757575)
-    val icon = if (visitado) Icons.Default.Done else Icons.Default.Lock
-    val text = if (visitado) "Visitado" else "Pendiente"
+fun StatusBadge(visitado: Boolean, bloqueado: Boolean) {
+    val containerColor = when {
+        visitado -> Color(0xFFE8F5E9)
+        bloqueado -> Color(0xFFFFEBEE)
+        else -> Color(0xFFF5F5F5)
+    }
+    val contentColor = when {
+        visitado -> Color(0xFF2E7D32)
+        bloqueado -> Color(0xFFC62828)
+        else -> Color(0xFF757575)
+    }
+    val icon = when {
+        visitado -> Icons.Default.Done
+        bloqueado -> Icons.Default.Lock
+        else -> Icons.Default.Lock
+    }
+    val text = when {
+        visitado -> "Visitado"
+        bloqueado -> "Bloqueado"
+        else -> "Pendiente"
+    }
 
     Surface(
         color = containerColor,

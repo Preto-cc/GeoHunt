@@ -16,6 +16,7 @@ data class DetalleLugarUiState(
     val lugar: Lugar? = null,
     val visitado: Boolean = false,
     val esPrimero: Boolean = false,
+    val bloqueado: Boolean = false,
     val distancia: Float? = null,
     val fechaVisita: Long? = null,
     val mensaje: String? = null,
@@ -31,14 +32,20 @@ class DetalleLugarViewModel(private val locationHelper: LocationHelper) : ViewMo
         viewModelScope.launch {
             val currentUid = AuthRepository.getCurrentUid() ?: ""
             val lugar = GeoHuntRepository.getLugarById(eventoId, lugarId)
-            val esPrimero = lugar?.primerVisitanteId == currentUid
             val visitado = GeoHuntRepository.esLugarVisitado(currentUid, lugarId)
+            
+            val bloqueado = if (lugar?.desbloqueadoPorLugarId != null) {
+                !GeoHuntRepository.esLugarVisitado(currentUid, lugar.desbloqueadoPorLugarId)
+            } else false
+
+            val esPrimero = lugar?.primerVisitanteId == currentUid
             val fechaVisita = if (visitado) GeoHuntRepository.getTimestampVisita(currentUid, lugarId) else null
             
             _uiState.value = _uiState.value.copy(
                 lugar = lugar,
                 visitado = visitado,
                 esPrimero = esPrimero,
+                bloqueado = bloqueado,
                 fechaVisita = fechaVisita,
                 mensaje = if (visitado) lugar?.mensajeOculto else null
             )
@@ -48,7 +55,7 @@ class DetalleLugarViewModel(private val locationHelper: LocationHelper) : ViewMo
     fun comprobarDistancia() {
         val currentUid = AuthRepository.getCurrentUid() ?: return
         val lugar = _uiState.value.lugar ?: return
-        if (_uiState.value.visitado) return
+        if (_uiState.value.visitado || _uiState.value.bloqueado) return
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(cargando = true, error = null)
