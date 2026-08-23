@@ -56,15 +56,6 @@
    - Sube el contenido de `firestore.rules` a tu consola de Firebase para asegurar los datos.
 4. **Compilar y Ejecutar:**
    - Abre el proyecto en Android Studio, sincroniza Gradle y lánzalo en un dispositivo físico o emulador con Play Services.
-
----
-
-## 📸 Capturas de Pantalla
-
-| Inicio | Lista de Eventos | Detalle de Lugar | Ranking |
-| :---: | :---: | :---: | :---: |
-| ![Welcome](https://via.placeholder.com/200x400?text=Bienvenida) | ![Events](https://via.placeholder.com/200x400?text=Eventos) | ![Detail](https://via.placeholder.com/200x400?text=Detalle) | ![Ranking](https://via.placeholder.com/200x400?text=Ranking) |
-
 ---
 
 ## 📄 Licencia
