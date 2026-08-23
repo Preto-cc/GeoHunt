@@ -14,21 +14,22 @@ class AdminViewModel : ViewModel() {
     val eventos: StateFlow<List<Evento>> = GeoHuntRepository.getEventosAdmin()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun crearEvento(nombre: String, descripcion: String, fechaFin: Long?) {
+    fun crearEvento(nombre: String, descripcion: String, fechaFin: Long?, rankingCercano: Boolean) {
         viewModelScope.launch {
             val evento = Evento(
                 nombre = nombre,
                 descripcion = descripcion,
                 fechaInicio = System.currentTimeMillis(),
-                fechaFin = fechaFin
+                fechaFin = fechaFin,
+                rankingCercano = rankingCercano
             )
             GeoHuntRepository.crearEvento(evento)
         }
     }
 
-    fun actualizarEvento(eventoId: String, nombre: String, descripcion: String, activo: Boolean, fechaFin: Long?) {
+    fun actualizarEvento(eventoId: String, nombre: String, descripcion: String, activo: Boolean, fechaFin: Long?, rankingCercano: Boolean) {
         viewModelScope.launch {
-            GeoHuntRepository.actualizarEvento(eventoId, nombre, descripcion, activo, fechaFin)
+            GeoHuntRepository.actualizarEvento(eventoId, nombre, descripcion, activo, fechaFin, rankingCercano)
         }
     }
 

@@ -1,25 +1,28 @@
-# Paseo por los cambios: Localización de Errores
+# Resumen de Cambios: Ranking Cercano
 
-Se han traducido y mejorado los mensajes de error en toda la aplicación para ofrecer una experiencia de usuario más coherente en español.
+Se ha implementado la funcionalidad de "Ranking Cercano" para los eventos, permitiendo un modo de juego más misterioso donde los jugadores solo ven su puntuación y la de sus competidores más directos.
 
 ## Cambios Realizados
 
-### Lógica de Localización
-- **[LocationHelper.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/utils/LocationHelper.kt)**:
-    - Ahora identifica si el error se debe a que el GPS está desactivado o a la falta de permisos, devolviendo mensajes específicos en español.
+### Backend y Lógica
+- **[Models.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/data/Models.kt)**:
+    - Añadido el campo `rankingCercano` a la clase `Evento`.
+    - Añadido el campo `uid` a `UsuarioRanking` para permitir identificaciones precisas en la interfaz.
+- **[GeoHuntRepository.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/data/repository/GeoHuntRepository.kt)**: Actualizada la lógica de persistencia y generación de ranking para incluir los nuevos campos.
+- **[RankingViewModel.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/viewmodel/RankingViewModel.kt)**: Ahora obtiene la configuración del evento para saber si debe aplicar la restricción de visibilidad.
 
-### Autenticación y Perfil
-- **[WelcomeViewModel.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/viewmodel/WelcomeViewModel.kt)**:
-    - Se han mapeado los errores de Google Sign-In y Firebase Auth (red, cancelación del usuario, etc.) a frases amigables.
-- **[ProfileViewModel.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/viewmodel/ProfileViewModel.kt)**:
-    - Mejora en los mensajes de borrado de cuenta, informando específicamente si el usuario necesita re-autenticarse por motivos de seguridad.
+### Panel de Administración
+- **[AdminScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/AdminScreen.kt)**:
+    - Se ha añadido el checkbox **"Ranking Cercano"** en los diálogos de creación y edición de eventos, situado justo debajo de "Evento Activo".
 
-### Juego y Administración
-- **[DetalleLugarViewModel.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/viewmodel/DetalleLugarViewModel.kt)**:
-    - Los errores al "comprobar distancia" ahora se presentan siempre en español, heredando las mejoras de `LocationHelper`.
-- **[AdminLugaresScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/AdminLugaresScreen.kt)**:
-    - Se ha verificado que todas las validaciones de formularios (coordenadas, radio, puntos) se comuniquen correctamente en español.
+### Experiencia del Usuario (Ranking)
+- **[RankingScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/RankingScreen.kt)**:
+    - **Lógica de Visibilidad**:
+        - Si el modo está activo, los jugadores normales solo ven los puntos del usuario inmediatamente superior e inferior a ellos en la tabla.
+        - El resto de puntuaciones se muestran como **"Puntos: Oculto"**.
+    - **Excepción de Admin**: Los administradores siguen viendo el ranking completo (todas las puntuaciones visibles) incluso si el modo cercano está activado.
 
 ## Verificación Realizada
-- Se ha comprobado el flujo de errores desactivando la red y el GPS.
-- Se han revisado los bloques `catch` para asegurar que no se escapen mensajes técnicos en inglés ("raw exceptions").
+- Se ha comprobado que el estado del checkbox se guarda correctamente.
+- Se ha verificado que un administrador ve todos los datos.
+- Se ha verificado que un usuario ve sus puntos y los de sus dos vecinos, pero no el resto.

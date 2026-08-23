@@ -1,6 +1,8 @@
-- [x] Traducir mensajes en `LocationHelper.kt`
-- [x] Mapear errores de inicio de sesión en `WelcomeViewModel.kt`
-- [x] Traducir errores de perfil en `ProfileViewModel.kt`
-- [x] Refinar mensajes en `DetalleLugarViewModel.kt`
-- [x] Revisar validaciones en `AdminLugaresScreen.kt`
-- [x] Verificar traducciones en la app
+- [x] Actualizar modelos de datos en `Models.kt`
+- [x] Actualizar Repositorio y ViewModels
+    - [x] Persistir `rankingCercano` en `GeoHuntRepository.kt`
+    - [x] Manejar `rankingCercano` en `AdminViewModel.kt`
+    - [x] Implementar lógica de visibilidad en `RankingViewModel.kt`
+- [x] Actualizar interfaz de administración en `AdminScreen.kt`
+- [x] Implementar lógica de visibilidad en `RankingScreen.kt`
+- [x] Verificar cambios

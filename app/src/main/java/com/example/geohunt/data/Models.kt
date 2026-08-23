@@ -11,7 +11,8 @@ data class Evento(
     val fechaInicio: Long = 0L,
     val fechaFin: Long? = null,
     val activo: Boolean = true,
-    val orden: Int = 0
+    val orden: Int = 0,
+    val rankingCercano: Boolean = false
 )
 
 @Keep
@@ -42,6 +43,7 @@ data class Visita(
 
 @Keep
 data class UsuarioRanking(
+    val uid: String = "",
     val nombre: String = "",
     val puntosTotales: Int = 0,
     val ultimaVisita: Long = 0L

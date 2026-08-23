@@ -1,34 +1,49 @@
-# Plan de Implementación: Localización de Mensajes de Error
+# Plan de Implementación: Ranking Cercano
 
-El objetivo de este plan es identificar y traducir al español los mensajes de error que actualmente se muestran en inglés al usuario. Muchos de estos errores provienen directamente de las excepciones capturadas de Firebase o del sistema Android.
+Este plan permitirá configurar eventos con un "Ranking Cercano". En esta modalidad, los participantes solo podrán ver su propia puntuación y la de los usuarios inmediatamente por encima y por debajo en la clasificación. Las puntuaciones de los demás usuarios aparecerán como "Oculto".
 
 ## Cambios Propuestos
 
-### Componente: Utilidades de Localización
+### Componente: Modelos de Datos
 
-#### [MODIFY] [LocationHelper.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/utils/LocationHelper.kt)
-- Refinar el bloque `catch` en `getCurrentLocation` para interceptar excepciones comunes de Google Play Services y devolver mensajes en español (ej. "Permiso de ubicación denegado", "El servicio de ubicación no está disponible").
+#### [MODIFY] [Models.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/data/Models.kt)
+- Añadir el campo `rankingCercano: Boolean = false` a la clase `Evento`.
+- Actualizar `UsuarioRanking` para incluir el campo `uid: String` de forma explícita.
+
+### Componente: Repositorio
+
+#### [MODIFY] [GeoHuntRepository.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/data/repository/GeoHuntRepository.kt)
+- Actualizar `actualizarEvento` para persistir el campo `rankingCercano`.
+- Modificar `getRanking` para rellenar el nuevo campo `uid` en los objetos `UsuarioRanking`.
 
 ### Componente: ViewModels
 
-#### [MODIFY] [WelcomeViewModel.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/viewmodel/WelcomeViewModel.kt)
-- Añadir un mapeo para los errores de inicio de sesión de Firebase y Google Sign-In (ej. "La red no está disponible", "El usuario canceló el inicio de sesión").
+#### [MODIFY] [AdminViewModel.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/viewmodel/AdminViewModel.kt)
+- Actualizar `crearEvento` y `actualizarEvento` para manejar el parámetro `rankingCercano`.
 
-#### [MODIFY] [ProfileViewModel.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/viewmodel/ProfileViewModel.kt)
-- Traducir errores relacionados con la actualización del perfil y el borrado de cuenta (ej. "Debes iniciar sesión de nuevo para borrar tu cuenta").
+#### [MODIFY] [RankingViewModel.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/viewmodel/RankingViewModel.kt)
+- Modificar para obtener también los detalles del `Evento` (necesario para saber si el ranking cercano está activo).
+- Adaptar la lógica de mapeo de nombres al nuevo campo `uid`.
 
-#### [MODIFY] [DetalleLugarViewModel.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/viewmodel/DetalleLugarViewModel.kt)
-- Asegurar que los errores de registro de visita y ubicación se presenten siempre en español.
+### Componente: Interfaz de Usuario (Administración)
 
-### Componente: Interfaz de Usuario
+#### [MODIFY] [AdminScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/AdminScreen.kt)
+- Añadir un `Checkbox` "Ranking Cercano" en los diálogos de creación y edición de eventos.
 
-#### [MODIFY] [AdminLugaresScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/AdminLugaresScreen.kt)
-- Revisar y asegurar que todas las validaciones del formulario de lugares estén en español.
+### Componente: Interfaz de Usuario (Ranking)
+
+#### [MODIFY] [RankingScreen.kt](file:///C:/Users/santi/AndroidStudioProjects/GeoHunt/app/src/main/java/com/example/geohunt/ui/screens/RankingScreen.kt)
+- Implementar la lógica de visibilidad:
+    - Identificar si el usuario actual es administrador.
+    - Identificar la posición del usuario actual en la lista.
+    - Si `rankingCercano` es true **y el usuario NO es administrador**:
+        - Mostrar los puntos solo si el usuario en esa fila es el usuario actual, el de arriba (i-1) o el de abajo (i+1).
+        - Para el resto de filas, mostrar "Puntos: Oculto".
+    - Si el usuario **ES administrador**, mostrar siempre todas las puntuaciones.
 
 ## Plan de Verificación
 
 ### Pruebas Manuales
-1. **Error de Ubicación**: Desactivar el GPS e intentar comprobar la distancia. Verificar que el mensaje sea descriptivo y en español.
-2. **Error de Red**: Desactivar el Wi-Fi/Datos e intentar iniciar sesión. Verificar que el error no sea "Network error".
-3. **Cancelación**: Iniciar el proceso de login con Google y cerrarlo sin elegir cuenta. Verificar el mensaje de feedback.
-4. **Borrado de cuenta**: Intentar borrar la cuenta tras mucho tiempo de sesión (para forzar re-autenticación) y verificar el mensaje de error.
+1. **Admin**: Crear un evento con "Ranking Cercano" activado (colocado debajo de "Evento Activo").
+2. **Jugador**: Entrar en el ranking y verificar que solo ve su puntuación y la de sus dos rivales más directos.
+3. **Admin**: Entrar en el ranking del mismo evento y verificar que él sí puede ver TODAS las puntuaciones sin restricciones.

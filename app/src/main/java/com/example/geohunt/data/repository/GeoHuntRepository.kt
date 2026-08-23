@@ -150,12 +150,13 @@ object GeoHuntRepository {
         db.collection("eventos").document(ref.id).set(evento.copy(id = ref.id, orden = nuevoOrden)).await()
     }
 
-    suspend fun actualizarEvento(eventoId: String, nombre: String, descripcion: String, activo: Boolean, fechaFin: Long?) {
+    suspend fun actualizarEvento(eventoId: String, nombre: String, descripcion: String, activo: Boolean, fechaFin: Long?, rankingCercano: Boolean) {
         val updates = mutableMapOf<String, Any?>(
             "nombre" to nombre,
             "descripcion" to descripcion,
             "activo" to activo,
-            "fechaFin" to fechaFin
+            "fechaFin" to fechaFin,
+            "rankingCercano" to rankingCercano
         )
         db.collection("eventos").document(eventoId).update(updates).await()
     }
@@ -278,7 +279,7 @@ object GeoHuntRepository {
         }
 
         return puntosPorUsuario.map { (userId, puntos) ->
-            UsuarioRanking(userId, puntos, ultimaVisitaPorUsuario[userId] ?: 0L)
+            UsuarioRanking(uid = userId, nombre = "", puntosTotales = puntos, ultimaVisita = ultimaVisitaPorUsuario[userId] ?: 0L)
         }.sortedWith(
             compareByDescending<UsuarioRanking> { it.puntosTotales }
                 .thenBy { it.ultimaVisita }

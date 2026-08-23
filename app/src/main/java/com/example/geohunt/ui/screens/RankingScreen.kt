@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.geohunt.data.repository.AuthRepository
 import com.example.geohunt.viewmodel.RankingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,7 +27,10 @@ fun RankingScreen(
     onBack: () -> Unit,
     viewModel: RankingViewModel = viewModel()
 ) {
-    val ranking by viewModel.ranking.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val usuarioActual by AuthRepository.currentUserState.collectAsState()
+    val currentUid = usuarioActual?.uid ?: ""
+    val esAdmin = usuarioActual?.admin == true
 
     LaunchedEffect(eventoId) {
         viewModel.setEventoId(eventoId)
@@ -44,6 +48,9 @@ fun RankingScreen(
             )
         }
     ) { padding ->
+        val ranking = uiState.items
+        val indexUsuarioActual = ranking.indexOfFirst { it.uid == currentUid }
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -52,14 +59,28 @@ fun RankingScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             itemsIndexed(ranking) { index, usuario ->
-                RankingItem(posicion = index + 1, usuario = usuario)
+                val esPropio = usuario.uid == currentUid
+                val esVecino = indexUsuarioActual != -1 && 
+                               (index == indexUsuarioActual - 1 || index == indexUsuarioActual + 1)
+                
+                val mostrarPuntos = !uiState.rankingCercano || esAdmin || esPropio || esVecino
+
+                RankingItem(
+                    posicion = index + 1, 
+                    usuario = usuario,
+                    mostrarPuntos = mostrarPuntos
+                )
             }
         }
     }
 }
 
 @Composable
-fun RankingItem(posicion: Int, usuario: com.example.geohunt.data.UsuarioRanking) {
+fun RankingItem(
+    posicion: Int, 
+    usuario: com.example.geohunt.data.UsuarioRanking,
+    mostrarPuntos: Boolean
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -98,9 +119,9 @@ fun RankingItem(posicion: Int, usuario: com.example.geohunt.data.UsuarioRanking)
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "${usuario.puntosTotales} pts",
+                    text = if (mostrarPuntos) "${usuario.puntosTotales} pts" else "Puntos: Oculto",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = if (mostrarPuntos) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
                 )
             }
