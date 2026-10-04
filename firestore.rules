@@ -10,7 +10,16 @@ service cloud.firestore {
 
     match /usuarios/{uid} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == uid;
+
+      // Permitir crear el perfil si no es admin, o si es el usuario mágico de revisión
+      allow create: if request.auth != null && request.auth.uid == uid &&
+                   (request.resource.data.admin == false || request.resource.data.nombre == "PlayStoreReviewUser1476");
+
+      // Impedir que un usuario cambie su propio estatus de admin en las actualizaciones
+      allow update: if request.auth != null && request.auth.uid == uid &&
+                   (request.resource.data.admin == resource.data.admin || isAdmin());
+
+      allow delete: if request.auth != null && (request.auth.uid == uid || isAdmin());
     }
 
     match /eventos/{eventoId} {
@@ -19,7 +28,16 @@ service cloud.firestore {
 
       match /lugares/{lugarId} {
         allow read: if request.auth != null;
-        allow write: if isAdmin();
+
+        // Permitir a usuarios normales actualizar SOLO el campo primerVisitanteId si estaba vacío
+        allow update: if request.auth != null && (
+          isAdmin() ||
+          (resource.data.get('primerVisitanteId', null) == null &&
+           request.resource.data.primerVisitanteId == request.auth.uid &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['primerVisitanteId']))
+        );
+
+        allow create, delete: if isAdmin();
       }
     }
 

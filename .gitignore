@@ -48,3 +48,5 @@ google-services.json
 
 # Kotlin
 .kotlin/
+/.artifacts/6b5d5d72-f3f9-4b9c-9891-2388713a0dc7/security_review.artifact.md
+/.artifacts/

@@ -73,11 +73,12 @@ fun DetalleLugarScreen(
                     }
                 )
             }
-        ) { padding ->
+        ) { innerPadding ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
+                    .padding(innerPadding)
+                    .consumeWindowInsets(innerPadding)
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {

@@ -10,5 +10,5 @@ data class Usuario(
     val tipoLogin: String = "", // "google" o "anonimo"
     val fotoUrl: String? = null,
     @get:PropertyName("admin") @set:PropertyName("admin")
-    var admin: Boolean = true
+    var admin: Boolean = false
 )

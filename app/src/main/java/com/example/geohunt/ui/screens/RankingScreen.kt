@@ -47,15 +47,20 @@ fun RankingScreen(
                 }
             )
         }
-    ) { padding ->
+    ) { innerPadding ->
         val ranking = uiState.items
         val indexUsuarioActual = ranking.indexOfFirst { it.uid == currentUid }
 
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
+                .consumeWindowInsets(innerPadding),
+            contentPadding = PaddingValues(
+                top = innerPadding.calculateTopPadding() + 16.dp,
+                bottom = innerPadding.calculateBottomPadding() + 16.dp,
+                start = 16.dp,
+                end = 16.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             itemsIndexed(ranking) { index, usuario ->
