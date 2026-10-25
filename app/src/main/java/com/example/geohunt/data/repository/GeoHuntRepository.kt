@@ -25,14 +25,16 @@ object GeoHuntRepository {
     val visitas: StateFlow<List<Visita>> = _visitas.asStateFlow()
 
     fun startListeningVisitas() {
-        if (FirebaseAuth.getInstance().currentUser == null) return
+        val user = FirebaseAuth.getInstance().currentUser ?: return
         visitasListener?.remove()
-        visitasListener = db.collection("visitas").addSnapshotListener { snapshot, error ->
-            if (error != null || FirebaseAuth.getInstance().currentUser == null) return@addSnapshotListener
-            if (snapshot != null) {
-                _visitas.value = snapshot.toObjects(Visita::class.java)
+        visitasListener = db.collection("visitas")
+            .whereEqualTo("usuarioId", user.uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || FirebaseAuth.getInstance().currentUser == null) return@addSnapshotListener
+                if (snapshot != null) {
+                    _visitas.value = snapshot.toObjects(Visita::class.java)
+                }
             }
-        }
     }
 
     fun stopListeningVisitas() {
@@ -114,10 +116,12 @@ object GeoHuntRepository {
         val visitaRef = db.collection("visitas").document(visitaId)
         val lugarRef = db.collection("eventos").document(eventoId).collection("lugares").document(lugarId)
         val eventoRef = db.collection("eventos").document(eventoId)
+        val rankingRef = db.collection("eventos").document(eventoId).collection("ranking").document(usuarioId)
+        val userRef = db.collection("usuarios").document(usuarioId)
 
         return try {
             db.runTransaction { transaction ->
-                // Comprobar si el evento ha finalizado
+                // 1. Lecturas
                 val eventoDoc = transaction.get(eventoRef)
                 val fechaFin = eventoDoc.getLong("fechaFin")
                 if (fechaFin != null && fechaFin > 0 && System.currentTimeMillis() > fechaFin) {
@@ -128,18 +132,64 @@ object GeoHuntRepository {
                 if (visitaDoc.exists()) return@runTransaction false
 
                 val lugarDoc = transaction.get(lugarRef)
-                val primerId = lugarDoc.getString("primerVisitanteId")
-                val esPrimero = primerId == null || primerId.isEmpty()
+                val puntosLugar = (lugarDoc.getLong("puntos") ?: 0L).toInt()
+                val puntosBonusLugar = (lugarDoc.getLong("puntosBonus") ?: 0L).toInt()
 
+                val primerId = lugarDoc.getString("primerVisitanteId")
+                val esPrimero = primerId.isNullOrEmpty()
+
+                val rankingDoc = transaction.get(rankingRef)
+                val userDoc = transaction.get(userRef)
+                val nombreUsuario = userDoc.getString("nombre") ?: "Usuario"
+
+                // 2. Escrituras
                 if (esPrimero) {
                     transaction.update(lugarRef, "primerVisitanteId", usuarioId)
                 }
 
-                val nuevaVisita = Visita(usuarioId, lugarId, eventoId, System.currentTimeMillis(), esPrimero)
+                val timestamp = System.currentTimeMillis()
+                val nuevaVisita = Visita(usuarioId, lugarId, eventoId, timestamp, esPrimero)
                 transaction.set(visitaRef, nuevaVisita)
+
+                val puntosGanados = puntosLugar + if (esPrimero) puntosBonusLugar else 0
+                val puntosActuales = (rankingDoc.getLong("puntosTotales") ?: 0L).toInt()
+                val nuevosPuntos = puntosActuales + puntosGanados
+
+                val rankingData = mapOf(
+                    "uid" to usuarioId,
+                    "nombre" to nombreUsuario,
+                    "puntosTotales" to nuevosPuntos,
+                    "ultimaVisita" to timestamp,
+                    "ultimoLugarId" to lugarId
+                )
+                transaction.set(rankingRef, rankingData)
+
                 true
             }.await()
         } catch (e: Exception) { false }
+    }
+
+    fun getRankingByEvento(eventoId: String): Flow<List<UsuarioRanking>> = callbackFlow {
+        if (FirebaseAuth.getInstance().currentUser == null) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+        val subscription = db.collection("eventos").document(eventoId).collection("ranking")
+            .orderBy("puntosTotales", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || FirebaseAuth.getInstance().currentUser == null) {
+                    android.util.Log.e("GeoHuntRepository", "Error cargando ranking: ${error?.message}")
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val list = snapshot.toObjects(UsuarioRanking::class.java)
+                        .sortedWith(compareByDescending<UsuarioRanking> { it.puntosTotales }.thenBy { it.ultimaVisita })
+                    trySend(list)
+                }
+            }
+        awaitClose { subscription.remove() }
     }
 
     suspend fun crearEvento(evento: Evento) {
@@ -172,6 +222,12 @@ object GeoHuntRepository {
 
     suspend fun borrarEvento(eventoId: String) {
         try {
+            val rankingQuery = db.collection("eventos").document(eventoId).collection("ranking").get().await()
+            if (!rankingQuery.isEmpty) {
+                val batchRanking = db.batch()
+                rankingQuery.documents.forEach { batchRanking.delete(it.reference) }
+                batchRanking.commit().await()
+            }
             val visitasQuery = db.collection("visitas").whereEqualTo("eventoId", eventoId).get().await()
             if (!visitasQuery.isEmpty) {
                 val batchVisitas = db.batch()
@@ -191,6 +247,12 @@ object GeoHuntRepository {
 
     suspend fun reiniciarEvento(eventoId: String) {
         try {
+            val rankingQuery = db.collection("eventos").document(eventoId).collection("ranking").get().await()
+            if (!rankingQuery.isEmpty) {
+                val batchRanking = db.batch()
+                rankingQuery.documents.forEach { batchRanking.delete(it.reference) }
+                batchRanking.commit().await()
+            }
             val visitasQuery = db.collection("visitas").whereEqualTo("eventoId", eventoId).get().await()
             if (!visitasQuery.isEmpty) {
                 val batch = db.batch()
@@ -255,36 +317,24 @@ object GeoHuntRepository {
         } catch (e: Exception) { }
     }
 
+    suspend fun updateNombreEnRankings(usuarioId: String, nuevoNombre: String) {
+        try {
+            val eventosQuery = db.collection("eventos").get().await()
+            eventosQuery.documents.forEach { eventoDoc ->
+                val rankingDocRef = eventoDoc.reference.collection("ranking").document(usuarioId)
+                val rankingDoc = rankingDocRef.get().await()
+                if (rankingDoc.exists()) {
+                    rankingDocRef.update("nombre", nuevoNombre).await()
+                }
+            }
+        } catch (e: Exception) { }
+    }
+
     fun esLugarVisitado(usuarioId: String, lugarId: String): Boolean {
         return _visitas.value.any { it.usuarioId == usuarioId && it.lugarId == lugarId }
     }
 
     fun getTimestampVisita(usuarioId: String, lugarId: String): Long? {
         return _visitas.value.find { it.usuarioId == usuarioId && it.lugarId == lugarId }?.timestamp
-    }
-
-    fun getRanking(eventoId: String, lugares: List<Lugar>): List<UsuarioRanking> {
-        val visitasEvento = _visitas.value.filter { it.eventoId == eventoId }
-        val puntosPorUsuario = mutableMapOf<String, Int>()
-        val ultimaVisitaPorUsuario = mutableMapOf<String, Long>()
-
-        visitasEvento.forEach { visita ->
-            val lugar = lugares.find { it.id == visita.lugarId }
-            if (lugar != null) {
-                val puntosTotales = lugar.puntos + if (visita.esPrimero) lugar.puntosBonus else 0
-                puntosPorUsuario[visita.usuarioId] = (puntosPorUsuario[visita.usuarioId] ?: 0) + puntosTotales
-                val actualUltima = ultimaVisitaPorUsuario[visita.usuarioId] ?: 0L
-                if (visita.timestamp > actualUltima) {
-                    ultimaVisitaPorUsuario[visita.usuarioId] = visita.timestamp
-                }
-            }
-        }
-
-        return puntosPorUsuario.map { (userId, puntos) ->
-            UsuarioRanking(uid = userId, nombre = "", puntosTotales = puntos, ultimaVisita = ultimaVisitaPorUsuario[userId] ?: 0L)
-        }.sortedWith(
-            compareByDescending<UsuarioRanking> { it.puntosTotales }
-                .thenBy { it.ultimaVisita }
-        )
     }
 }

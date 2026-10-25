@@ -48,5 +48,6 @@ data class UsuarioRanking(
     val uid: String = "",
     val nombre: String = "",
     val puntosTotales: Int = 0,
-    val ultimaVisita: Long = 0L
+    val ultimaVisita: Long = 0L,
+    val ultimoLugarId: String = ""
 )

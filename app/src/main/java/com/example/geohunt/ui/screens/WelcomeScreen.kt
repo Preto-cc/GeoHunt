@@ -29,7 +29,7 @@ fun WelcomeScreen(
     val scope = rememberCoroutineScope()
     val credentialManager = CredentialManager.create(context)
     
-    val webClientId = "608441159192-i0jbelo7d4vdpb1kau6uhlo8e4v7te4p.apps.googleusercontent.com"
+    val webClientId = androidx.compose.ui.res.stringResource(R.string.default_web_client_id)
 
     LaunchedEffect(uiState.isAuthenticated) {
         if (uiState.isAuthenticated) {

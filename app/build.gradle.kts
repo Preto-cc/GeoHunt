@@ -24,6 +24,19 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    flavorDimensions += "environment"
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            resValue("string", "app_name", "GeoHunt Dev")
+        }
+        create("prod") {
+            dimension = "environment"
+            resValue("string", "app_name", "GeoHunt")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -41,6 +54,7 @@ android {
     }
     buildFeatures {
         compose = true
+        resValues = true
     }
 }
 

@@ -3,6 +3,7 @@ package com.example.geohunt.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.geohunt.data.repository.AuthRepository
+import com.example.geohunt.data.repository.GeoHuntRepository
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,6 +43,7 @@ class ProfileViewModel : ViewModel() {
             try {
                 FirebaseFirestore.getInstance().collection("usuarios").document(uid)
                     .update("nombre", nuevoNombre).await()
+                GeoHuntRepository.updateNombreEnRankings(uid, nuevoNombre)
                 _uiState.value = _uiState.value.copy(isLoading = false, updateSuccess = true)
             } catch (e: Exception) {
                 val errorMsg = if (e.message?.contains("network") == true) "No hay conexión a internet."

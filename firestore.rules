@@ -8,6 +8,11 @@ service cloud.firestore {
         get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.admin == true;
     }
 
+    function getLugarPuntosMaximos(eventoId, lugarId) {
+      let lugar = get(/databases/$(database)/documents/eventos/$(eventoId)/lugares/$(lugarId)).data;
+      return lugar.puntos + lugar.puntosBonus;
+    }
+
     match /usuarios/{uid} {
       allow read: if request.auth != null;
 
@@ -39,11 +44,36 @@ service cloud.firestore {
 
         allow create, delete: if isAdmin();
       }
+
+      match /ranking/{usuarioId} {
+        allow read: if request.auth != null;
+
+        // Creación del propio documento de ranking: los puntos no superan los del lugar visitado
+        allow create: if request.auth != null && (request.auth.uid == usuarioId || isAdmin()) &&
+                     request.resource.data.keys().hasAll(['uid', 'nombre', 'puntosTotales', 'ultimaVisita', 'ultimoLugarId']) &&
+                     request.resource.data.uid == usuarioId &&
+                     request.resource.data.puntosTotales >= 0 &&
+                     (isAdmin() || request.resource.data.puntosTotales <= getLugarPuntosMaximos(eventoId, request.resource.data.ultimoLugarId));
+
+        // Actualización atómica de puntos propios: el incremento no puede superar los puntos (+bonus) del lugar dinámico
+        allow update: if request.auth != null && (request.auth.uid == usuarioId || isAdmin()) &&
+                     request.resource.data.uid == usuarioId &&
+                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uid', 'nombre', 'puntosTotales', 'ultimaVisita', 'ultimoLugarId']) &&
+                     (isAdmin() || (
+                       request.resource.data.puntosTotales >= resource.data.puntosTotales &&
+                       request.resource.data.puntosTotales - resource.data.puntosTotales <= getLugarPuntosMaximos(eventoId, request.resource.data.ultimoLugarId)
+                     ));
+
+        allow delete: if isAdmin() || (request.auth != null && request.auth.uid == usuarioId);
+      }
     }
 
     match /visitas/{visitaId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && request.resource.data.usuarioId == request.auth.uid;
+      // Exigir que el ID del documento coincida con eventoId_lugarId_usuarioId
+      allow create: if request.auth != null &&
+                    request.resource.data.usuarioId == request.auth.uid &&
+                    visitaId == request.resource.data.eventoId + '_' + request.resource.data.lugarId + '_' + request.auth.uid;
       // Permitir borrar visitas al admin o al propio dueño (para limpieza de anónimos)
       allow update, delete: if isAdmin() || (request.auth != null && resource.data.usuarioId == request.auth.uid);
     }
